@@ -137,6 +137,8 @@ int main(int argc, char **argv) {
 		if (!auth) {
 			printf("\nAuthentication failed\n");
 			sleep(AUTH_FAIL_TIMEOUT);
+			printf("\033[H\033[2J");
+			fflush(stdout);
 		}
 	}
 
