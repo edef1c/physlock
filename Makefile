@@ -6,7 +6,7 @@ CC      = gcc
 PREFIX  = /usr/local
 CFLAGS  = -Wall -pedantic -DVERSION=\"$(VERSION)\"
 LDFLAGS =
-LIBS    = -lcrypt
+LIBS    = -lpam -lpam_misc
 
 SRC = auth.c main.c options.c util.c vt.c
 OBJ = $(SRC:.c=.o)

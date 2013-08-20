@@ -1,5 +1,6 @@
 /* physlock: auth.h
  * Copyright (c) 2013 Bert Muennich <be.muennich at gmail.com>
+ * Copyright (c) 2013 edef <edef at edef.eu>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -21,13 +22,7 @@
 
 #include <sys/types.h>
 
-typedef struct userinfo_s {
-	const char *name;
-	const char *pwhash;
-} userinfo_t;
-
-void get_uname(userinfo_t*, uid_t);
-void get_pwhash(userinfo_t*);
-int authenticate(const userinfo_t*, const char*);
+char* get_uname(uid_t);
+int authenticate(const char*);
 
 #endif /* AUTH_H */

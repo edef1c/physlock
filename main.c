@@ -1,5 +1,6 @@
 /* physlock: main.c
  * Copyright (c) 2013 Bert Muennich <be.muennich at gmail.com>
+ * Copyright (c) 2013 edef <edef at edef.eu>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -73,34 +74,12 @@ int setup_signal(int signum, void (*handler)(int)) {
 	}
 }
 
-void prompt(FILE *stream, const char *fmt, ...) {
-	va_list args;
-	unsigned int c, i = 0;
-
-	if (!stream || !fmt)
-		return;
-
-	va_start(args, fmt);
-	vfprintf(stream, fmt, args);
-	va_end(args);
-
-	while ((c = fgetc(stream)) != EOF && c != '\n') {
-		if (c != '\0' && i + 1 < BUFLEN)
-			buf[i++] = (char) c;
-	}
-	if (ferror(stream))
-		die("could not read from console: %s", strerror(errno));
-	buf[i] = '\0';
-}
-
 int main(int argc, char **argv) {
-	int only_root, auth = 0, chpid;
-	uid_t uid;
-	userinfo_t *as, root, user;
+	int auth = 0, chpid;
+	char* user;
 
 	oldvt = oldsysrq = vt.nr = vt.fd = -1;
 	vt.ios = NULL;
-	root.name = "root";
 
 	parse_options(argc, argv);
 
@@ -135,19 +114,7 @@ int main(int argc, char **argv) {
 			set_sysrq_state(SYSRQ_PATH, 0);
 	}
 
-	if (options->user) {
-		user.name = options->user;
-	} else {
-		uid = getuid();
-		get_uname(&user, uid);
-	}
-
-	get_pwhash(&root);
-	only_root = strcmp(user.name, root.name) == 0;
-	if (!only_root) {
-		get_pwhash(&user);
-		authenticate(&user, ""); /* test authentication */
-	}
+	user = get_uname(getuid());
 
 	acquire_new_vt(&vt);
 	lock_vt_switch();
@@ -164,13 +131,11 @@ int main(int argc, char **argv) {
 	}
 
 	while (!auth) {
-		as = only_root ? &root : &user;
 		flush_vt(&vt);
 
-		prompt(vt.ios, "[%s]: ", as->name);
-		auth = authenticate(as, buf);
+		auth = authenticate(user);
 		if (!auth) {
-			fprintf(vt.ios, "\nAuthentication failed\n");
+			printf("\nAuthentication failed\n");
 			sleep(AUTH_FAIL_TIMEOUT);
 		}
 	}

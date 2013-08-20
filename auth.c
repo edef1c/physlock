@@ -1,5 +1,6 @@
 /* physlock: auth.c
  * Copyright (c) 2013 Bert Muennich <be.muennich at gmail.com>
+ * Copyright (c) 2013 edef <edef at edef.eu>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -28,49 +29,35 @@
 #include "auth.h"
 #include "util.h"
 
-void get_uname(userinfo_t *uinfo, uid_t uid) {
-	struct passwd *pw;
+#include <security/pam_appl.h>
+#include <security/pam_misc.h>
+static const struct pam_conv conv = {
+  misc_conv,
+  NULL
+};
 
-	if (uinfo == NULL)
-		return;
+char* get_uname(uid_t uid) {
+	struct passwd *pw;
 
 	pw = getpwuid(uid);
 	if (pw == NULL)
 		die("could not get user info for uid %u\n", uid);
 	
-	uinfo->name = strdup(pw->pw_name);
-	if (uinfo->name == NULL)
+	char* uname = strdup(pw->pw_name);
+	if (uname == NULL)
 		die("could not allocate memory");
+	return strdup(pw->pw_name);
 }
 
-void get_pwhash(userinfo_t *uinfo) {
-	struct spwd *spw;
 
-	if (uinfo == NULL || uinfo->name == NULL)
-		return;
-
-	setspent();
-
-	spw = getspnam(uinfo->name);
-	if (spw == NULL)
-		die("could not get password hash of user %s", uinfo->name);
-
-	uinfo->pwhash = strdup(spw->sp_pwdp);
-	if (uinfo->pwhash == NULL)
-		die("could not allocate memory");
-
-	endspent();
-}
-
-int authenticate(const userinfo_t *uinfo, const char *pw) {
-	char *cryptpw;
-
-	if (uinfo == NULL || uinfo->pwhash == NULL || pw == NULL)
-		return 0;
-
-	cryptpw = crypt(pw, uinfo->pwhash);
-	if (cryptpw == NULL)
-		die("could not hash password for user %s", uinfo->name);
-
-	return strcmp(cryptpw, uinfo->pwhash) == 0;
+int authenticate(const char *uname) {
+  pam_handle_t *pamh;
+  int pamret;
+  pamret = pam_start("login", uname, &conv, &pamh);
+  if (pamret != PAM_SUCCESS)
+    return 0;
+  pamret = pam_authenticate(pamh, 0);
+  if (pamret != PAM_SUCCESS)
+    return 0;
+	return 1;
 }

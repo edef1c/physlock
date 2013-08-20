@@ -1,5 +1,6 @@
 /* physlock: vt.c
  * Copyright (c) 2013 Bert Muennich <be.muennich at gmail.com>
+ * Copyright (c) 2013 edef <edef at edef.eu>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -78,6 +79,10 @@ void acquire_new_vt(vt_t *vt) {
 		die("could not open file %s: %s", filename, strerror(errno));
 	vt->fd = fileno(vt->ios);
 
+	dup2(vt->fd, fileno(stdin));
+	dup2(vt->fd, fileno(stdout));
+	dup2(vt->fd, fileno(stderr));
+
 	if (ioctl(fd, VT_ACTIVATE, vt->nr) < 0 ||
 			ioctl(fd, VT_WAITACTIVE, vt->nr) < 0)
 		die("could not activate console # %d: %s", vt->nr, strerror(errno));
@@ -102,6 +107,9 @@ void release_vt(vt_t *vt, int nr) {
 	}
 
 	if (vt->nr > 0) {
+		close(fileno(stdin));
+		close(fileno(stdout));
+		close(fileno(stderr));
 		if (ioctl(fd, VT_DISALLOCATE, vt->nr) < 0)
 			die("could not deallocate console # %d: %s", vt->nr, strerror(errno));
 		vt->nr = -1;
