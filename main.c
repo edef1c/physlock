@@ -167,7 +167,7 @@ int main(int argc, char **argv) {
 		as = only_root ? &root : &user;
 		flush_vt(&vt);
 
-		prompt(vt.ios, "%s's password: ", as->name);
+		prompt(vt.ios, "[%s]: ", as->name);
 		auth = authenticate(as, buf);
 		if (!auth) {
 			fprintf(vt.ios, "\nAuthentication failed\n");
